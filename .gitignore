@@ -15,6 +15,7 @@ mcp-server/dist/
 !.env.example
 
 # Test Reports & Artifacts
+reports/allure-results/
 reports/allure-report/
 reports/screenshots/
 reports/videos/

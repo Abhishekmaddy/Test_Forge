@@ -14,6 +14,8 @@ import { CustomWorld } from './world';
 import { Logger } from '@utils/logger';
 import { AllureHelper } from '@utils/allure.helper';
 import { JiraClient } from '@utils/jira.client';
+import { AllureCucumberTestRuntime } from 'allure-cucumberjs';
+import { setGlobalTestRuntime } from 'allure-js-commons/sdk/runtime';
 import fs from 'fs';
 import path from 'path';
 
@@ -22,6 +24,12 @@ const allureHelper = new AllureHelper();
 let executionStartTime: Date;
 
 setDefaultTimeout(parseInt(process.env.TIMEOUT || '30000') + 10000);
+
+// allure-cucumberjs only registers this when its package root is required;
+// cucumber.config.ts only loads its `/reporter` formatter submodule, so without
+// this the allure-js-commons facade (allure.step/label/tag/...) has no runtime
+// to report to and silently no-ops with a console warning on every call.
+setGlobalTestRuntime(new AllureCucumberTestRuntime());
 
 // ============ BeforeAll ============
 BeforeAll(async function () {
@@ -79,7 +87,9 @@ Before(async function (this: CustomWorld, scenario: ITestCaseHookParameter) {
 
   this.tags.forEach(tag => allureHelper.addTag(tag));
 
-  await this.openBrowser();
+  if (!this.tags.includes('@api')) {
+    await this.openBrowser();
+  }
 });
 
 // ============ After Each Scenario ============
@@ -132,7 +142,6 @@ After(async function (this: CustomWorld, scenario: ITestCaseHookParameter) {
     }
   } else if (result?.status === Status.PASSED) {
     logger.info(`PASSED: ${this.scenarioName} (${duration}ms)`);
-    allureHelper.addLabel('testStatus', 'passed');
 
     if (process.env.JIRA_UPDATE_ON_FAILURE === 'true' && process.env.JIRA_BASE_URL) {
       try {
@@ -163,7 +172,7 @@ BeforeStep(async function (this: CustomWorld, step: ITestStepHookParameter) {
   logger.debug(`  → Step: ${stepText}`);
 });
 
-// ============ After Each Step (with screenshot on failure) ============
+// ============ After Each Step ============
 AfterStep(async function (this: CustomWorld, step: ITestStepHookParameter) {
   if (step.result?.status === Status.FAILED) {
     logger.error(`  ✗ Step failed: ${step.pickleStep.text}`);

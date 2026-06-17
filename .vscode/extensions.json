@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    "ms-playwright.playwright",
+    "cucumber.cucumber-official",
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "anthropic.claude-code",
+    "hbenl.vscode-test-explorer",
+    "ms-vscode.test-adapter-converter",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "christian-kohler.path-intellisense",
+    "firsttris.vscode-jest-runner",
+    "yzhang.markdown-all-in-one",
+    "PKief.material-icon-theme",
+    "eamodio.gitlens",
+    "ms-vscode.vscode-typescript-next",
+    "naumovs.color-highlight",
+    "oderwat.indent-rainbow",
+    "aaron-bond.better-comments",
+    "ms-azuretools.vscode-docker",
+    "redhat.vscode-yaml"
+  ]
+}

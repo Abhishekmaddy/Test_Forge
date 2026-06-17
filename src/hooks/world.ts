@@ -1,10 +1,9 @@
 import { setWorldConstructor, World, IWorldOptions } from '@cucumber/cucumber';
 import { Browser, BrowserContext, Page, chromium, firefox, webkit } from '@playwright/test';
-import { config } from '@config/config.manager';
+import { config, EnvironmentConfig } from '@config/config.manager';
 import { Logger } from '@utils/logger';
-import { IWorld } from '@types/framework.types';
 
-export class CustomWorld extends World implements Partial<IWorld> {
+export class CustomWorld extends World {
   browser!: Browser;
   context!: BrowserContext;
   page!: Page;
@@ -15,6 +14,7 @@ export class CustomWorld extends World implements Partial<IWorld> {
   scenario: string = '';
   tags: string[] = [];
   logger: Logger;
+  config: EnvironmentConfig = config;
 
   constructor(options: IWorldOptions) {
     super(options);
@@ -33,7 +33,8 @@ export class CustomWorld extends World implements Partial<IWorld> {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
+        '--disable-gpu',
+        ...(!headless ? ['--start-maximized'] : [])
       ]
     };
 
@@ -49,7 +50,9 @@ export class CustomWorld extends World implements Partial<IWorld> {
     }
 
     this.context = await this.browser.newContext({
-      viewport: { width: 1920, height: 1080 },
+      // null viewport lets the page fill the actual (maximized) browser window
+      // instead of being capped to a fixed size when running headed
+      viewport: headless ? { width: 1920, height: 1080 } : null,
       recordVideo: {
         dir: 'reports/videos/',
         size: { width: 1920, height: 1080 }

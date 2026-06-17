@@ -1,0 +1,255 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Enterprise Automation Framework"
+    }
+  ],
+  "settings": {
+    // Editor
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.tabSize": 2,
+    "editor.wordWrap": "on",
+    "editor.rulers": [100, 120],
+    "editor.bracketPairColorization.enabled": true,
+    "editor.linkedEditing": true,
+    "editor.inlineSuggest.enabled": true,
+    
+    // TypeScript
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.suggest.autoImports": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Playwright
+    "playwright.reuseBrowser": false,
+    "playwright.showTrace": true,
+    
+    // Cucumber
+    "cucumberautocomplete.steps": ["src/steps/**/*.ts"],
+    "cucumberautocomplete.syncfeatures": "features/**/*.feature",
+    "cucumberautocomplete.strictGherkinCompletion": false,
+    "cucumberautocomplete.formatConfOverride": {
+      "Ability": 0,
+      "Feature": 0,
+      "Background": 1,
+      "Scenario": 1,
+      "ScenarioOutline": 1,
+      "Given": 2,
+      "When": 2,
+      "Then": 2,
+      "And": 2,
+      "But": 2,
+      "Examples": 2,
+      "example": 3
+    },
+    
+    // Files
+    "files.associations": {
+      "*.feature": "gherkin",
+      "*.env*": "dotenv",
+      "Jenkinsfile": "groovy"
+    },
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.git": true,
+      "**/reports/allure-report": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/reports/**": true
+    },
+
+    // GitHub Copilot
+    "github.copilot.enable": {
+      "*": true,
+      "typescript": true,
+      "gherkin": true
+    },
+    
+    // Terminal
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    
+    // Linting
+    "eslint.validate": ["typescript"],
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      // Core Development
+      "ms-vscode.vscode-typescript-next",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      
+      // Playwright
+      "ms-playwright.playwright",
+      
+      // Cucumber/BDD
+      "alexkrechik.cucumberautocomplete",
+      "stevejpurves.cucumber",
+      
+      // AI Assistance
+      "GitHub.copilot",
+      "GitHub.copilot-chat",
+      
+      // Docker
+      "ms-azuretools.vscode-docker",
+      "ms-vscode-remote.remote-containers",
+      
+      // Git
+      "eamodio.gitlens",
+      "mhutchie.git-graph",
+      
+      // Testing
+      "orta.vscode-jest",
+      "hbenl.vscode-test-explorer",
+      
+      // Utilities
+      "christian-kohler.path-intellisense",
+      "wayou.vscode-todo-highlight",
+      "gruntfuggly.todo-tree",
+      "oderwat.indent-rainbow",
+      "pkief.material-icon-theme",
+      "zhuangtongfa.material-theme",
+      
+      // JIRA
+      "atlassian.atlascode",
+      
+      // Markdown
+      "yzhang.markdown-all-in-one",
+      "bierner.markdown-mermaid",
+      
+      // Environment
+      "mikestead.dotenv"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🔥 Run Smoke Tests",
+        "type": "shell",
+        "command": "TAGS=@smoke npm test",
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "🔄 Run Regression Tests",
+        "type": "shell",
+        "command": "TAGS=@regression npm test",
+        "group": "test",
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "🔑 Run Login Tests",
+        "type": "shell",
+        "command": "TAGS=@login npm test",
+        "group": "test",
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "📊 Generate Allure Report",
+        "type": "shell",
+        "command": "npm run allure:generate && npm run allure:open",
+        "group": "build",
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "🏗️ Build MCP Server",
+        "type": "shell",
+        "command": "npm run mcp:build",
+        "group": "build",
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "🤖 Start MCP Server",
+        "type": "shell",
+        "command": "npm run mcp:start",
+        "group": "build",
+        "isBackground": true,
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "🧹 Clean Reports",
+        "type": "shell",
+        "command": "npm run clean",
+        "group": "build"
+      },
+      {
+        "label": "🐳 Docker: Run Tests",
+        "type": "shell",
+        "command": "cd docker && docker compose --profile test up --abort-on-container-exit",
+        "group": "test",
+        "presentation": { "panel": "dedicated" }
+      },
+      {
+        "label": "🐳 Docker: Start Allure Server",
+        "type": "shell",
+        "command": "cd docker && docker compose --profile report up -d",
+        "group": "build",
+        "presentation": { "panel": "dedicated" }
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "🔍 Debug Current Feature",
+        "program": "${workspaceFolder}/node_modules/.bin/cucumber-js",
+        "args": [
+          "--tags", "@debug",
+          "--require-module", "ts-node/register",
+          "--require", "src/hooks/**/*.ts",
+          "--require", "src/steps/**/*.ts"
+        ],
+        "env": {
+          "HEADED": "true",
+          "ENV": "local",
+          "LOG_LEVEL": "debug"
+        },
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "🔍 Debug Login Tests",
+        "program": "${workspaceFolder}/node_modules/.bin/cucumber-js",
+        "args": [
+          "--tags", "@login",
+          "--require-module", "ts-node/register",
+          "--require", "src/hooks/**/*.ts",
+          "--require", "src/steps/**/*.ts"
+        ],
+        "env": {
+          "HEADED": "true",
+          "ENV": "local"
+        },
+        "console": "integratedTerminal"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "🤖 Debug MCP Server",
+        "program": "${workspaceFolder}/mcp-server/src/index.ts",
+        "outFiles": ["${workspaceFolder}/mcp-server/dist/**/*.js"],
+        "preLaunchTask": "🏗️ Build MCP Server",
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}

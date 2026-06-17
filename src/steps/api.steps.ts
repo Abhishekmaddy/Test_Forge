@@ -19,7 +19,7 @@ Given('the API base URL is configured', async function (this: CustomWorld) {
   const baseUrl = this.config.apiBaseUrl;
   expect(baseUrl).toBeTruthy();
   logger.info(`API Base URL: ${baseUrl}`);
-  this.testData.set('apiBaseUrl', baseUrl);
+  this.setTestData('apiBaseUrl', baseUrl);
 });
 
 Given('I have a valid authentication token', async function (this: CustomWorld) {
@@ -29,13 +29,13 @@ Given('I have a valid authentication token', async function (this: CustomWorld) 
       username: this.config.username,
       password: this.config.password
     });
-    const token = response.data?.access_token || 'mock-token-for-demo';
-    this.testData.set('authToken', token);
+    const token = ((response.data as any)?.access_token) || 'mock-token-for-demo';
+    this.setTestData('authToken', token);
     logger.info('Authentication token obtained');
     await allure.addStep('Obtained auth token', 'passed');
   } catch {
     // Use mock token for demo purposes when backend is not available
-    this.testData.set('authToken', 'mock-bearer-token');
+    this.setTestData('authToken', 'mock-bearer-token');
     logger.warn('Using mock token - backend not available');
   }
 });
@@ -47,21 +47,21 @@ Given('I am authenticated as {string}', async function (this: CustomWorld, email
       username: email,
       password: this.config.password
     });
-    const token = response.data?.access_token || 'mock-token';
-    this.testData.set('authToken', token);
-    this.testData.set('currentUser', email);
+    const token = ((response.data as any)?.access_token) || 'mock-token';
+    this.setTestData('authToken', token);
+    this.setTestData('currentUser', email);
     api.setAuthToken(token);
-    this.testData.set('apiClient', api);
+    this.setTestData('apiClient', api);
     logger.info(`Authenticated as: ${email}`);
   } catch {
-    this.testData.set('authToken', 'mock-bearer-token');
-    this.testData.set('currentUser', email);
+    this.setTestData('authToken', 'mock-bearer-token');
+    this.setTestData('currentUser', email);
     logger.warn(`Mock auth for: ${email}`);
   }
 });
 
 Given('I have an invalid authentication token', function (this: CustomWorld) {
-  this.testData.set('authToken', 'invalid-token-xyz');
+  this.setTestData('authToken', 'invalid-token-xyz');
   logger.info('Set invalid auth token');
 });
 
@@ -73,12 +73,12 @@ Given('I have a new user payload', function (this: CustomWorld) {
     role: 'viewer',
     password: 'TestPass@123'
   };
-  this.testData.set('requestPayload', payload);
+  this.setTestData('requestPayload', payload);
   logger.info('Created new user payload');
 });
 
 Given('an existing user with id {string}', function (this: CustomWorld, userId: string) {
-  this.testData.set('userId', userId);
+  this.setTestData('userId', userId);
   logger.info(`Target user ID: ${userId}`);
 });
 
@@ -88,7 +88,7 @@ When(
   'I send a GET request to {string}',
   async function (this: CustomWorld, endpoint: string) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
     const startTime = Date.now();
@@ -96,9 +96,9 @@ When(
       const response = await api.get(endpoint);
       const elapsed = Date.now() - startTime;
 
-      this.testData.set('apiResponse', response);
-      this.testData.set('responseTime', elapsed);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('responseTime', elapsed);
+      this.setTestData('statusCode', response.status);
 
       logger.info(`GET ${endpoint} → ${response.status} (${elapsed}ms)`);
       await allure.addStep(`GET ${endpoint}`, 'passed');
@@ -107,9 +107,9 @@ When(
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
 
-      this.testData.set('apiResponse', response);
-      this.testData.set('responseTime', elapsed);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('responseTime', elapsed);
+      this.setTestData('statusCode', response?.status);
 
       logger.warn(`GET ${endpoint} failed with ${response?.status}`);
     }
@@ -120,7 +120,7 @@ When(
   'I send a POST request to {string} with:',
   async function (this: CustomWorld, endpoint: string, dataTable: DataTable) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
     const rowsHash = dataTable.rowsHash();
@@ -131,16 +131,16 @@ When(
       const response = await api.post(endpoint, payload);
       const elapsed = Date.now() - startTime;
 
-      this.testData.set('apiResponse', response);
-      this.testData.set('responseTime', elapsed);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('responseTime', elapsed);
+      this.setTestData('statusCode', response.status);
 
       logger.info(`POST ${endpoint} → ${response.status} (${elapsed}ms)`);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response?.status);
     }
   }
 );
@@ -149,21 +149,21 @@ When(
   'I send a POST request to {string} with the payload',
   async function (this: CustomWorld, endpoint: string) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
-    const payload = this.testData.get('requestPayload') as Record<string, unknown>;
+    const payload = this.getTestData('requestPayload') as Record<string, unknown>;
 
     try {
       const response = await api.post(endpoint, payload);
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response.status);
       logger.info(`POST ${endpoint} → ${response.status}`);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response?.status);
     }
   }
 );
@@ -172,20 +172,20 @@ When(
   'I send a POST request to {string} with invalid payload',
   async function (this: CustomWorld, endpoint: string) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
     const invalidPayload = { email: 'not-an-email', firstName: '' };
 
     try {
       const response = await api.post(endpoint, invalidPayload);
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response.status);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response?.status);
     }
   }
 );
@@ -194,7 +194,7 @@ When(
   'I send a PUT request to {string} with:',
   async function (this: CustomWorld, endpoint: string, dataTable: DataTable) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
     const rowsHash = dataTable.rowsHash();
@@ -202,14 +202,14 @@ When(
 
     try {
       const response = await api.put(endpoint, payload);
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response.status);
       logger.info(`PUT ${endpoint} → ${response.status}`);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response?.status);
     }
   }
 );
@@ -218,19 +218,19 @@ When(
   'I send a DELETE request to {string}',
   async function (this: CustomWorld, endpoint: string) {
     const api = new ApiHelper(this.config.apiBaseUrl);
-    const token = this.testData.get('authToken') as string;
+    const token = this.getTestData('authToken') as string;
     if (token) api.setAuthToken(token);
 
     try {
       const response = await api.delete(endpoint);
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response.status);
       logger.info(`DELETE ${endpoint} → ${response.status}`);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status: number; data: unknown } };
       const response = axiosError.response;
-      this.testData.set('apiResponse', response);
-      this.testData.set('statusCode', response?.status);
+      this.setTestData('apiResponse', response);
+      this.setTestData('statusCode', response?.status);
     }
   }
 );
@@ -240,7 +240,7 @@ When(
 Then(
   'the response status code should be {int}',
   function (this: CustomWorld, expectedStatus: number) {
-    const actualStatus = this.testData.get('statusCode') as number;
+    const actualStatus = this.getTestData('statusCode') as number;
     logger.info(`Asserting status: expected=${expectedStatus}, actual=${actualStatus}`);
     expect(actualStatus).toBe(expectedStatus);
   }
@@ -249,7 +249,7 @@ Then(
 Then(
   'the response should contain {string}',
   function (this: CustomWorld, expectedText: string) {
-    const response = this.testData.get('apiResponse') as { data: unknown };
+    const response = this.getTestData('apiResponse') as { data: unknown };
     const responseStr = JSON.stringify(response?.data || '');
     expect(responseStr).toContain(expectedText);
     logger.info(`Response contains: "${expectedText}"`);
@@ -259,7 +259,7 @@ Then(
 Then(
   'the response body should match schema {string}',
   function (this: CustomWorld, schemaName: string) {
-    const response = this.testData.get('apiResponse') as { data: Record<string, unknown> };
+    const response = this.getTestData('apiResponse') as { data: Record<string, unknown> };
     const data = response?.data;
 
     // Schema validation per schema name
@@ -280,7 +280,7 @@ Then(
 Then(
   'the response field {string} should equal {string}',
   function (this: CustomWorld, fieldPath: string, expectedValue: string) {
-    const response = this.testData.get('apiResponse') as { data: Record<string, unknown> };
+    const response = this.getTestData('apiResponse') as { data: Record<string, unknown> };
     const data = response?.data;
 
     // Support dot notation for nested fields: "user.email"
@@ -298,7 +298,7 @@ Then(
 Then(
   'the response should contain {string} items',
   function (this: CustomWorld, expectedCount: string) {
-    const response = this.testData.get('apiResponse') as { data: { data?: unknown[] } | unknown[] };
+    const response = this.getTestData('apiResponse') as { data: { data?: unknown[] } | unknown[] };
     const data = response?.data;
     const items = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data || [];
     expect(items.length).toBe(parseInt(expectedCount));
@@ -309,7 +309,7 @@ Then(
 Then(
   'the response time should be less than {int} milliseconds',
   function (this: CustomWorld, maxMs: number) {
-    const responseTime = this.testData.get('responseTime') as number;
+    const responseTime = this.getTestData('responseTime') as number;
     logger.info(`Response time: ${responseTime}ms (threshold: ${maxMs}ms)`);
     expect(responseTime).toBeLessThan(maxMs);
   }

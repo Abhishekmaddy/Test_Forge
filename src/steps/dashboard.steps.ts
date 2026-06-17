@@ -76,7 +76,7 @@ When(
 When(
   'I type {string} in the global search bar',
   async function (this: CustomWorld, searchTerm: string) {
-    this.testData.set('searchTerm', searchTerm);
+    this.setTestData('searchTerm', searchTerm);
     const searchInput = this.page.locator('[data-testid="global-search"]');
     await searchInput.click();
     await searchInput.fill(searchTerm);

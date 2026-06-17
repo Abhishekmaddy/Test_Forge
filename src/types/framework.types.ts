@@ -1,4 +1,5 @@
 import { Browser, BrowserContext, Page } from '@playwright/test';
+import { EnvironmentConfig } from '@config/config.manager';
 
 // ============ World Context Types ============
 export interface IWorld {
@@ -11,6 +12,7 @@ export interface IWorld {
   feature: string;
   scenario: string;
   tags: string[];
+  config: EnvironmentConfig;
 }
 
 // ============ JIRA Types ============

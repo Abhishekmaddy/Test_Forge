@@ -9,60 +9,61 @@ const logFormat = printf(({ level, message, timestamp: ts, stack, context }) => 
   return `${ts} ${level}: ${ctx}${msg}`;
 });
 
-const createLogger = (context?: string): winston.Logger => {
-  const logLevel = process.env.LOG_LEVEL || 'info';
-  const logFile = path.join('reports/logs', `test-run-${new Date().toISOString().split('T')[0]}.log`);
+const logLevel = process.env.LOG_LEVEL || 'info';
+const logFile = path.join('reports/logs', `test-run-${new Date().toISOString().split('T')[0]}.log`);
 
-  return winston.createLogger({
-    level: logLevel,
-    defaultMeta: { context },
-    format: combine(
-      errors({ stack: true }),
-      timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' })
-    ),
-    transports: [
-      // Console transport with colors
-      new winston.transports.Console({
-        format: combine(
-          colorize({ all: true }),
-          timestamp({ format: 'HH:mm:ss.SSS' }),
-          logFormat
-        )
-      }),
-      // File transport
-      new winston.transports.File({
-        filename: logFile,
-        format: combine(
-          timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-          logFormat
-        ),
-        maxsize: 10 * 1024 * 1024, // 10MB
-        maxFiles: 5,
-        tailable: true
-      }),
-      // Error-only file transport
-      new winston.transports.File({
-        filename: 'reports/logs/errors.log',
-        level: 'error',
-        format: combine(
-          timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-          logFormat
-        )
-      })
-    ],
-    exceptionHandlers: [
-      new winston.transports.File({ filename: 'reports/logs/exceptions.log' })
-    ]
-  });
-};
+// Shared winston instance backing every Logger wrapper below. winston registers
+// a process-level 'uncaughtException' listener per exceptionHandlers-configured
+// instance and never removes it; since Logger is constructed repeatedly per
+// scenario (e.g. a new page object, and thus a new Logger, on nearly every
+// step), creating a fresh winston.createLogger(...) each time exceeded Node's
+// default listener limit. Using .child() reuses the same transports/handlers.
+const baseLogger = winston.createLogger({
+  level: logLevel,
+  format: combine(
+    errors({ stack: true }),
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' })
+  ),
+  transports: [
+    // Console transport with colors
+    new winston.transports.Console({
+      format: combine(
+        colorize({ all: true }),
+        timestamp({ format: 'HH:mm:ss.SSS' }),
+        logFormat
+      )
+    }),
+    // File transport
+    new winston.transports.File({
+      filename: logFile,
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+        logFormat
+      ),
+      maxsize: 10 * 1024 * 1024, // 10MB
+      maxFiles: 5,
+      tailable: true
+    }),
+    // Error-only file transport
+    new winston.transports.File({
+      filename: 'reports/logs/errors.log',
+      level: 'error',
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+        logFormat
+      )
+    })
+  ],
+  exceptionHandlers: [
+    new winston.transports.File({ filename: 'reports/logs/exceptions.log' })
+  ]
+});
 
 export class Logger {
   private logger: winston.Logger;
-  private context: string;
 
   constructor(context: string) {
-    this.context = context;
-    this.logger = createLogger(context);
+    this.logger = baseLogger.child({ context });
   }
 
   info(message: string, ...meta: unknown[]): void {

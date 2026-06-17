@@ -382,14 +382,18 @@ SLACK_WEBHOOK_URL     → Slack incoming webhook
 
 ### Jenkins
 
+Minimal pipeline (`jenkins/Jenkinsfile`) for a native Windows Jenkins agent — no Docker, no Slack/JIRA wiring required:
+
 ```bash
 # Create pipeline in Jenkins:
 # 1. New Item → Pipeline
 # 2. Pipeline → Definition: "Pipeline script from SCM"
-# 3. SCM: Git, repo URL, branch: main
+# 3. SCM: Git, repo URL, branch: abhishekAutomation (or your branch)
 # 4. Script Path: jenkins/Jenkinsfile
-# 5. Add credentials: staging-test-credentials, jira-api-token
+# 5. Install the "HTML Publisher" plugin (used to publish the Allure report)
 ```
+
+Defaults to running `@flipkart` tests, since that suite hits flipkart.com directly and needs no test credentials. The `login`/`dashboard`/`api` features point at a placeholder app URL and won't pass in CI until pointed at a real backend.
 
 ---
 

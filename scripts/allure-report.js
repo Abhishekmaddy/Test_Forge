@@ -36,7 +36,8 @@ const allureBin = 'npx allure';
 switch (mode) {
   case 'generate':
     console.log('📊 Generating Allure report...');
-    run(`${allureBin} generate ${ALLURE_RESULTS} --clean -o ${ALLURE_REPORT}`);
+    fs.rmSync(ALLURE_REPORT, { recursive: true, force: true });
+    run(`${allureBin} generate ${ALLURE_RESULTS} -o ${ALLURE_REPORT}`);
     console.log(`✅ Report generated at: ${ALLURE_REPORT}`);
     break;
 
@@ -48,6 +49,6 @@ switch (mode) {
   case 'serve':
   default:
     console.log('🚀 Starting Allure report server...');
-    run(`${allureBin} serve ${ALLURE_RESULTS} --port 9999`);
+    run(`${allureBin} open ${ALLURE_RESULTS} --port 9999`);
     break;
 }

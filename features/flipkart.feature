@@ -1,4 +1,4 @@
-@SCRUM-2
+@SCRUM-2 @flipkart
 Feature: Flipkart App
   As a user
   I want to open the Flipkart app
