@@ -235,14 +235,14 @@ export abstract class BasePage {
     return new Promise(resolve => {
       this.page.on('dialog', dialog => {
         resolve(dialog.message());
-        dialog.accept();
+        void dialog.accept();
       });
     });
   }
 
   // ============ Frames & Windows ============
   async switchToFrame(locator: string): Promise<void> {
-    const frameLocator = this.page.frameLocator(locator);
+    this.page.frameLocator(locator);
     // Use frameLocator for subsequent actions
     this.logger.info(`Switched to frame: ${locator}`);
   }
@@ -258,13 +258,12 @@ export abstract class BasePage {
   // ============ Scroll ============
   async scrollToBottom(): Promise<void> {
     await this.page.evaluate(() => {
-      const doc = (globalThis as any).document ?? null;
-      if (doc) (globalThis as any).scrollTo(0, (doc.body as any).scrollHeight);
+      window.scrollTo(0, document.body.scrollHeight);
     });
   }
 
   async scrollToTop(): Promise<void> {
-    await this.page.evaluate(() => (globalThis as any).scrollTo(0, 0));
+    await this.page.evaluate(() => window.scrollTo(0, 0));
   }
 
   async scrollIntoView(locator: Locator | string): Promise<void> {
@@ -275,6 +274,7 @@ export abstract class BasePage {
   // ============ JavaScript Execution ============
   async executeScript<T>(script: string, ...args: unknown[]): Promise<T> {
     // allow passing a script string or function; cast to any to satisfy generic typing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await this.page.evaluate<T>(script as any, ...args);
   }
 

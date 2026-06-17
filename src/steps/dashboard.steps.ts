@@ -25,7 +25,7 @@ Given(
     loginPage = new LoginPage(this.page);
     dashboardPage = new DashboardPage(this.page);
 
-    await allure.addStep(`Login as ${email}`, 'passed');
+    allure.addStep(`Login as ${email}`, 'passed');
     await loginPage.navigate();
     await loginPage.login(email, password);
     logger.info(`Logged in as: ${email}`);
@@ -49,7 +49,7 @@ Given(
 // ============ WHEN STEPS ============
 
 When('I click on the {string} menu item', async function (this: CustomWorld, menuItem: string) {
-  await allure.addStep(`Click menu: ${menuItem}`, 'passed');
+  allure.addStep(`Click menu: ${menuItem}`, 'passed');
   await this.page.getByRole('navigation').getByText(menuItem, { exact: false }).click();
   await this.page.waitForLoadState('networkidle');
   logger.info(`Clicked menu item: ${menuItem}`);

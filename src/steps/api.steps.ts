@@ -13,6 +13,10 @@ import { AllureHelper } from '@utils/allure.helper';
 const logger = new Logger('APISteps');
 const allure = new AllureHelper();
 
+interface AuthLoginResponse {
+  access_token?: string;
+}
+
 // ============ BACKGROUND STEPS ============
 
 Given('the API base URL is configured', async function (this: CustomWorld) {
@@ -29,10 +33,10 @@ Given('I have a valid authentication token', async function (this: CustomWorld) 
       username: this.config.username,
       password: this.config.password
     });
-    const token = ((response.data as any)?.access_token) || 'mock-token-for-demo';
+    const token = (response.data as AuthLoginResponse)?.access_token || 'mock-token-for-demo';
     this.setTestData('authToken', token);
     logger.info('Authentication token obtained');
-    await allure.addStep('Obtained auth token', 'passed');
+    allure.addStep('Obtained auth token', 'passed');
   } catch {
     // Use mock token for demo purposes when backend is not available
     this.setTestData('authToken', 'mock-bearer-token');
@@ -47,7 +51,7 @@ Given('I am authenticated as {string}', async function (this: CustomWorld, email
       username: email,
       password: this.config.password
     });
-    const token = ((response.data as any)?.access_token) || 'mock-token';
+    const token = (response.data as AuthLoginResponse)?.access_token || 'mock-token';
     this.setTestData('authToken', token);
     this.setTestData('currentUser', email);
     api.setAuthToken(token);
@@ -101,7 +105,7 @@ When(
       this.setTestData('statusCode', response.status);
 
       logger.info(`GET ${endpoint} → ${response.status} (${elapsed}ms)`);
-      await allure.addStep(`GET ${endpoint}`, 'passed');
+      allure.addStep(`GET ${endpoint}`, 'passed');
     } catch (error: unknown) {
       const elapsed = Date.now() - startTime;
       const axiosError = error as { response?: { status: number; data: unknown } };

@@ -155,7 +155,7 @@ Then(
 );
 
 Then('I should remain on the login page', async function (this: CustomWorld) {
-  const currentUrl = await this.page.url();
+  const currentUrl = this.page.url();
   expect(currentUrl).toContain('login');
   allure.addStep('Verified user remains on login page');
 });
@@ -182,13 +182,8 @@ Then('the login button should be disabled', async function (this: CustomWorld) {
 });
 
 Then('the session should persist', async function (this: CustomWorld) {
-  // Check for session/auth cookie or token
-  const cookies = await this.page.context().cookies();
-  const authCookie = cookies.find(
-    c => c.name === 'auth_token' || c.name === 'session' || c.name === 'remember_token'
-  );
   // Just verify we're still on dashboard (session exists)
-  const currentUrl = await this.page.url();
+  const currentUrl = this.page.url();
   expect(currentUrl).toContain('dashboard');
   allure.addStep('Verified session persists');
 });

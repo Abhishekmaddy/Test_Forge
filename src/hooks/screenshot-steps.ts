@@ -15,7 +15,7 @@ function withScreenshot(fn: StepFn): StepFn {
     await fn.apply(this, args);
     if (this.page) {
       const screenshot = await this.page.screenshot({ fullPage: true });
-      await this.attach(screenshot, 'image/png');
+      this.attach(screenshot, 'image/png');
     }
   };
   // Cucumber validates that the registered function's declared arity (.length)

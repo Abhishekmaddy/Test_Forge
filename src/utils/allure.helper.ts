@@ -3,7 +3,7 @@ import * as allure from 'allure-js-commons';
 export class AllureHelper {
   addLabel(name: string, value: string): void {
     try {
-      allure.label(name, value);
+      void allure.label(name, value);
     } catch {
       // Silently fail if allure is not in context
     }
@@ -11,7 +11,7 @@ export class AllureHelper {
 
   addTag(tag: string): void {
     try {
-      allure.tag(tag.replace('@', ''));
+      void allure.tag(tag.replace('@', ''));
     } catch {
       // Silently fail
     }
@@ -19,9 +19,7 @@ export class AllureHelper {
 
   addStep(name: string, status: 'passed' | 'failed' | 'broken' | 'skipped' = 'passed'): void {
     try {
-      allure.step(name, () => {
-        // Step content
-      });
+      void allure.logStep(name, status as allure.Status);
     } catch {
       // Silently fail
     }
@@ -30,7 +28,7 @@ export class AllureHelper {
   addAttachment(name: string, content: Buffer | string, type: string): void {
     try {
       const buffer = typeof content === 'string' ? Buffer.from(content) : content;
-      allure.attachment(name, buffer, type as allure.ContentType);
+      void allure.attachment(name, buffer, type as allure.ContentType);
     } catch {
       // Silently fail
     }
@@ -39,9 +37,9 @@ export class AllureHelper {
   addDescription(description: string, type: 'text' | 'html' | 'markdown' = 'markdown'): void {
     try {
       if (type === 'html') {
-        allure.descriptionHtml(description);
+        void allure.descriptionHtml(description);
       } else {
-        allure.description(description);
+        void allure.description(description);
       }
     } catch {
       // Silently fail
@@ -50,7 +48,7 @@ export class AllureHelper {
 
   addSeverity(severity: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'): void {
     try {
-      allure.severity(severity as allure.Severity);
+      void allure.severity(severity as allure.Severity);
     } catch {
       // Silently fail
     }
@@ -58,7 +56,7 @@ export class AllureHelper {
 
   addOwner(owner: string): void {
     try {
-      allure.owner(owner);
+      void allure.owner(owner);
     } catch {
       // Silently fail
     }
@@ -66,7 +64,7 @@ export class AllureHelper {
 
   addIssue(url: string, name?: string): void {
     try {
-      allure.issue(name || url, url);
+      void allure.issue(name || url, url);
     } catch {
       // Silently fail
     }
@@ -74,7 +72,7 @@ export class AllureHelper {
 
   addLink(url: string, name?: string, type?: string): void {
     try {
-      allure.link(url, name, type as allure.LinkType);
+      void allure.link(url, name, type as allure.LinkType);
     } catch {
       // Silently fail
     }
@@ -82,7 +80,7 @@ export class AllureHelper {
 
   addParameter(name: string, value: string): void {
     try {
-      allure.parameter(name, value);
+      void allure.parameter(name, value);
     } catch {
       // Silently fail
     }
@@ -95,7 +93,7 @@ export class AllureHelper {
   addEnvironmentInfo(info: Record<string, string>): void {
     Object.entries(info).forEach(([key, value]) => {
       try {
-        allure.parameter(key, value);
+        void allure.parameter(key, value);
       } catch {
         // Silently fail
       }
