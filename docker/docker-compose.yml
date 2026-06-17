@@ -1,0 +1,165 @@
+version: '3.8'
+
+# ============================================================
+# Enterprise Automation Framework - Docker Compose
+# ============================================================
+
+services:
+  # ============ Main Test Runner ============
+  automation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: enterprise-automation:latest
+    container_name: automation-runner
+    environment:
+      - ENV=${ENV:-staging}
+      - BASE_URL=${BASE_URL:-https://staging.your-app.com}
+      - API_BASE_URL=${API_BASE_URL:-https://staging-api.your-app.com}
+      - TEST_USERNAME=${TEST_USERNAME:-test@example.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-password123}
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY:-AUTO}
+      - BROWSER=${BROWSER:-chromium}
+      - TAGS=${TAGS:-@smoke}
+      - PARALLEL=${PARALLEL:-4}
+      - RETRY=${RETRY:-1}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./reports:/app/reports
+      - ./.env.staging:/app/.env.staging:ro
+    networks:
+      - automation-network
+    command: ["npm", "test"]
+    profiles:
+      - test
+
+  # ============ Allure Report Server ============
+  allure-server:
+    image: frankescobar/allure-docker-service:2.27.0
+    container_name: allure-server
+    environment:
+      - CHECK_RESULTS_EVERY_SECONDS=3
+      - KEEP_HISTORY=20
+      - KEEP_HISTORY_LATEST=25
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./reports/allure-results:/app/allure-results
+      - ./reports/allure-report:/app/default-reports
+    networks:
+      - automation-network
+    profiles:
+      - report
+
+  # ============ Allure UI ============
+  allure-ui:
+    image: frankescobar/allure-docker-service-ui:7.0.3
+    container_name: allure-ui
+    environment:
+      - ALLURE_DOCKER_PUBLIC_API_URL=http://localhost:5050
+      - ALLURE_DOCKER_PUBLIC_API_URL_PREFIX=
+    ports:
+      - "5252:5252"
+    networks:
+      - automation-network
+    depends_on:
+      - allure-server
+    profiles:
+      - report
+
+  # ============ Smoke Tests (Chromium) ============
+  smoke-chromium:
+    extends:
+      service: automation
+    container_name: smoke-chromium
+    environment:
+      - TAGS=@smoke
+      - BROWSER=chromium
+      - PARALLEL=2
+    profiles:
+      - smoke
+
+  # ============ Smoke Tests (Firefox) ============
+  smoke-firefox:
+    extends:
+      service: automation
+    container_name: smoke-firefox
+    environment:
+      - TAGS=@smoke
+      - BROWSER=firefox
+      - PARALLEL=1
+    profiles:
+      - smoke
+
+  # ============ Regression Tests ============
+  regression:
+    extends:
+      service: automation
+    container_name: regression-runner
+    environment:
+      - TAGS=@regression
+      - BROWSER=chromium
+      - PARALLEL=4
+      - RETRY=2
+    profiles:
+      - regression
+
+  # ============ MCP Server ============
+  mcp-server:
+    build:
+      context: ../mcp-server
+      dockerfile: Dockerfile
+    container_name: mcp-automation-server
+    environment:
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY:-AUTO}
+      - PROJECT_ROOT=/workspace
+    volumes:
+      - ..:/workspace
+    networks:
+      - automation-network
+    profiles:
+      - mcp
+
+  # ============ Selenium Grid (Alternative) ============
+  selenium-hub:
+    image: selenium/hub:4.20.0
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+      - "4443:4443"
+      - "4442:4442"
+    networks:
+      - automation-network
+    profiles:
+      - grid
+
+  chrome-node:
+    image: selenium/node-chrome:4.20.0
+    container_name: chrome-node
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=4
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - automation-network
+    profiles:
+      - grid
+
+networks:
+  automation-network:
+    driver: bridge
+    name: automation-net
+
+volumes:
+  allure-results:
+  allure-reports:

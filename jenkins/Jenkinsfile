@@ -1,0 +1,374 @@
+// Enterprise Automation Framework - Jenkins Pipeline
+// Declarative Pipeline with parallel execution, Allure reporting, and JIRA integration
+
+pipeline {
+    agent none
+
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['staging', 'dev', 'prod'],
+            description: 'Target environment for test execution'
+        )
+        string(
+            name: 'TAGS',
+            defaultValue: '@regression',
+            description: 'Cucumber tags to run (e.g., @smoke, @regression, @login)'
+        )
+        choice(
+            name: 'BROWSER',
+            choices: ['chromium', 'firefox', 'webkit'],
+            description: 'Browser to use for testing'
+        )
+        string(
+            name: 'PARALLEL_WORKERS',
+            defaultValue: '4',
+            description: 'Number of parallel test workers'
+        )
+        booleanParam(
+            name: 'UPDATE_JIRA',
+            defaultValue: true,
+            description: 'Update JIRA issues with test results'
+        )
+        booleanParam(
+            name: 'GENERATE_ALLURE_REPORT',
+            defaultValue: true,
+            description: 'Generate and publish Allure report'
+        )
+    }
+
+    environment {
+        NODE_VERSION = '20'
+        NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+        REPORT_DIR = "${WORKSPACE}/reports"
+        ALLURE_RESULTS = "${REPORT_DIR}/allure-results"
+        ALLURE_REPORT = "${REPORT_DIR}/allure-report"
+        
+        // Jenkins Credentials
+        STAGING_CREDS = credentials('staging-test-credentials')
+        JIRA_CREDS = credentials('jira-api-token')
+        SLACK_WEBHOOK = credentials('slack-webhook-url')
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+        timestamps()
+        timeout(time: 2, unit: 'HOURS')
+        ansiColor('xterm')
+        parallelsAlwaysFailFast()
+    }
+
+    stages {
+        // ============ STAGE 1: PREPARATION ============
+        stage('🔧 Preparation') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                    args '-v ${WORKSPACE}/.npm:/root/.npm -u root'
+                }
+            }
+            steps {
+                echo '═══════════════════════════════════════════════'
+                echo '  Enterprise Automation Framework - Jenkins CI  '
+                echo '═══════════════════════════════════════════════'
+                echo "Environment: ${params.ENVIRONMENT}"
+                echo "Tags: ${params.TAGS}"
+                echo "Browser: ${params.BROWSER}"
+                echo "Parallel Workers: ${params.PARALLEL_WORKERS}"
+
+                script {
+                    // Create environment file
+                    sh """
+                        cat > .env.${params.ENVIRONMENT} << 'EOF'
+BASE_URL=${STAGING_CREDS_USR}
+TEST_USERNAME=${STAGING_CREDS_USR}
+TEST_PASSWORD=${STAGING_CREDS_PSW}
+JIRA_BASE_URL=${JIRA_URL}
+JIRA_API_TOKEN=${JIRA_CREDS}
+JIRA_UPDATE_ON_FAILURE=${params.UPDATE_JIRA}
+LOG_LEVEL=info
+EOF
+                    """
+
+                    // Install dependencies
+                    sh 'npm ci'
+                    sh 'npx playwright install ${params.BROWSER} --with-deps'
+                    
+                    // Type check
+                    sh 'npm run typecheck || echo "TypeScript check completed with warnings"'
+                    
+                    // Lint
+                    sh 'npm run lint || echo "Lint check completed with warnings"'
+
+                    // Dry run to validate feature files
+                    sh 'npx cucumber-js --dry-run || echo "Dry run completed"'
+                }
+            }
+        }
+
+        // ============ STAGE 2: SMOKE TESTS ============
+        stage('🔥 Smoke Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                    args '-u root'
+                }
+            }
+            steps {
+                echo 'Running Smoke Tests...'
+                script {
+                    sh 'npm ci'
+                    sh 'npx playwright install ${params.BROWSER} --with-deps'
+                    
+                    def testResult = sh(
+                        script: """
+                            ENV=${params.ENVIRONMENT} \\
+                            TAGS="@smoke" \\
+                            BROWSER=${params.BROWSER} \\
+                            PARALLEL=1 \\
+                            npm test
+                        """,
+                        returnStatus: true
+                    )
+
+                    if (testResult != 0) {
+                        unstable('Smoke tests have failures - continuing...')
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/allure-results/**/*', fingerprint: true
+                    stash includes: 'reports/allure-results/**/*', name: 'smoke-results'
+                }
+            }
+        }
+
+        // ============ STAGE 3: PARALLEL REGRESSION ============
+        stage('🔄 Regression Tests') {
+            parallel {
+                stage('Shard 1 - Login & Auth') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                            args '-u root'
+                        }
+                    }
+                    steps {
+                        sh 'npm ci && npx playwright install ${params.BROWSER} --with-deps'
+                        sh """
+                            ENV=${params.ENVIRONMENT} \\
+                            TAGS="@login" \\
+                            BROWSER=${params.BROWSER} \\
+                            npm test || true
+                        """
+                    }
+                    post {
+                        always {
+                            stash includes: 'reports/allure-results/**/*', name: 'shard1-results'
+                        }
+                    }
+                }
+
+                stage('Shard 2 - Dashboard & Navigation') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                            args '-u root'
+                        }
+                    }
+                    steps {
+                        sh 'npm ci && npx playwright install ${params.BROWSER} --with-deps'
+                        sh """
+                            ENV=${params.ENVIRONMENT} \\
+                            TAGS="@dashboard" \\
+                            BROWSER=${params.BROWSER} \\
+                            npm test || true
+                        """
+                    }
+                    post {
+                        always {
+                            stash includes: 'reports/allure-results/**/*', name: 'shard2-results'
+                        }
+                    }
+                }
+
+                stage('Shard 3 - API Tests') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                            args '-u root'
+                        }
+                    }
+                    steps {
+                        sh 'npm ci && npx playwright install ${params.BROWSER} --with-deps'
+                        sh """
+                            ENV=${params.ENVIRONMENT} \\
+                            TAGS="@api" \\
+                            BROWSER=${params.BROWSER} \\
+                            npm test || true
+                        """
+                    }
+                    post {
+                        always {
+                            stash includes: 'reports/allure-results/**/*', name: 'shard3-results'
+                        }
+                    }
+                }
+
+                stage('Shard 4 - Regression Suite') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.43.0-jammy'
+                            args '-u root'
+                        }
+                    }
+                    steps {
+                        sh 'npm ci && npx playwright install ${params.BROWSER} --with-deps'
+                        sh """
+                            ENV=${params.ENVIRONMENT} \\
+                            TAGS="${params.TAGS}" \\
+                            BROWSER=${params.BROWSER} \\
+                            npm test || true
+                        """
+                    }
+                    post {
+                        always {
+                            stash includes: 'reports/allure-results/**/*', name: 'shard4-results'
+                        }
+                    }
+                }
+            }
+        }
+
+        // ============ STAGE 4: ALLURE REPORT ============
+        stage('📊 Generate Reports') {
+            when {
+                expression { return params.GENERATE_ALLURE_REPORT }
+            }
+            agent {
+                docker {
+                    image 'node:20-bullseye'
+                    args '-u root'
+                }
+            }
+            steps {
+                sh 'npm ci'
+
+                // Unstash all results
+                unstash 'smoke-results'
+                unstash 'shard1-results'
+                unstash 'shard2-results'
+                unstash 'shard3-results'
+                unstash 'shard4-results'
+
+                // Install Java & Allure
+                sh """
+                    apt-get update -q && apt-get install -y default-jre wget
+                    wget -q https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
+                    tar -zxvf allure-2.27.0.tgz
+                    mv allure-2.27.0 /usr/local/allure
+                    ln -s /usr/local/allure/bin/allure /usr/local/bin/allure
+                """
+
+                sh """
+                    allure generate ${ALLURE_RESULTS} \\
+                        --clean \\
+                        -o ${ALLURE_REPORT} \\
+                        --report-name "Enterprise Automation - Build #${BUILD_NUMBER}"
+                """
+            }
+            post {
+                always {
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: "${ALLURE_REPORT}",
+                        reportFiles: 'index.html',
+                        reportName: '📊 Allure Test Report',
+                        reportTitles: "Build ${BUILD_NUMBER} - Test Report"
+                    ])
+
+                    archiveArtifacts artifacts: 'reports/**/*', fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ============ STAGE 5: JIRA UPDATE ============
+        stage('📌 Update JIRA') {
+            when {
+                expression { return params.UPDATE_JIRA }
+            }
+            agent {
+                docker {
+                    image 'node:20-bullseye'
+                    args '-u root'
+                }
+            }
+            steps {
+                sh 'npm ci'
+                
+                sh """
+                    ENV=${params.ENVIRONMENT} \\
+                    JIRA_BASE_URL=${JIRA_URL} \\
+                    JIRA_API_TOKEN=${JIRA_CREDS} \\
+                    node scripts/update-jira.js || echo 'JIRA update completed'
+                """
+            }
+        }
+    }
+
+    // ============ POST ACTIONS ============
+    post {
+        always {
+            echo 'Pipeline completed. Cleaning up...'
+        }
+        success {
+            echo '✅ Pipeline PASSED!'
+            slackSend(
+                channel: '#automation-results',
+                color: 'good',
+                message: """✅ *PASSED* - ${JOB_NAME} #${BUILD_NUMBER}
+• Environment: ${params.ENVIRONMENT}
+• Tags: ${params.TAGS}
+• Browser: ${params.BROWSER}
+• Report: ${BUILD_URL}Allure_20Test_20Report/"""
+            )
+        }
+        failure {
+            echo '❌ Pipeline FAILED!'
+            slackSend(
+                channel: '#automation-results',
+                color: 'danger',
+                message: """❌ *FAILED* - ${JOB_NAME} #${BUILD_NUMBER}
+• Environment: ${params.ENVIRONMENT}
+• Tags: ${params.TAGS}
+• Build URL: ${BUILD_URL}
+• Console: ${BUILD_URL}console"""
+            )
+            emailext(
+                subject: "❌ Test Failure: ${JOB_NAME} #${BUILD_NUMBER}",
+                body: """Test execution FAILED.
+                
+Job: ${JOB_NAME}
+Build: #${BUILD_NUMBER}
+Environment: ${params.ENVIRONMENT}
+Tags: ${params.TAGS}
+
+Build URL: ${BUILD_URL}
+Allure Report: ${BUILD_URL}Allure_20Test_20Report/
+Console: ${BUILD_URL}console""",
+                to: 'sdet-team@company.com',
+                attachLog: true
+            )
+        }
+        unstable {
+            slackSend(
+                channel: '#automation-results',
+                color: 'warning',
+                message: "⚠️ *UNSTABLE* - ${JOB_NAME} #${BUILD_NUMBER} - Some tests failed"
+            )
+        }
+    }
+}

@@ -1,0 +1,96 @@
+{
+  "users": {
+    "admin": {
+      "email": "admin@example.com",
+      "password": "Admin@123",
+      "role": "admin",
+      "firstName": "Admin",
+      "lastName": "User"
+    },
+    "standard": {
+      "email": "user@example.com",
+      "password": "User@123",
+      "role": "user",
+      "firstName": "Standard",
+      "lastName": "User"
+    },
+    "readonly": {
+      "email": "readonly@example.com",
+      "password": "Readonly@123",
+      "role": "readonly",
+      "firstName": "Read",
+      "lastName": "Only"
+    },
+    "manager": {
+      "email": "manager@example.com",
+      "password": "Manager@123",
+      "role": "manager",
+      "firstName": "Manager",
+      "lastName": "User"
+    }
+  },
+  "invalidUsers": {
+    "wrongPassword": {
+      "email": "user@example.com",
+      "password": "wrongpassword"
+    },
+    "nonExistent": {
+      "email": "nobody@example.com",
+      "password": "Password@123"
+    },
+    "invalidEmail": {
+      "email": "not-an-email",
+      "password": "Password@123"
+    }
+  },
+  "api": {
+    "endpoints": {
+      "auth": "/auth/login",
+      "users": "/users",
+      "profile": "/users/me",
+      "reports": "/reports",
+      "dashboard": "/dashboard/stats"
+    },
+    "timeouts": {
+      "default": 5000,
+      "upload": 30000,
+      "export": 60000
+    }
+  },
+  "testProducts": [
+    {
+      "id": "PROD-001",
+      "name": "Enterprise Plan",
+      "price": 999.99,
+      "currency": "USD"
+    },
+    {
+      "id": "PROD-002",
+      "name": "Professional Plan",
+      "price": 499.99,
+      "currency": "USD"
+    }
+  ],
+  "jira": {
+    "projectKey": "AUTO",
+    "issueTypes": ["Story", "Bug", "Task", "Test"],
+    "testStatusMap": {
+      "passed": "Done",
+      "failed": "In Progress",
+      "skipped": "To Do"
+    }
+  },
+  "allure": {
+    "suiteNames": {
+      "login": "Authentication",
+      "dashboard": "Dashboard",
+      "api": "API Integration"
+    },
+    "severities": {
+      "smoke": "blocker",
+      "critical": "critical",
+      "regression": "normal",
+      "minor": "minor"
+    }
+  }
+}

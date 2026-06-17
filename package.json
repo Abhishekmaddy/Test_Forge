@@ -1,0 +1,48 @@
+{
+  "name": "enterprise-automation-framework",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Playwright + TypeScript + Cucumber BDD Automation Framework",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:headed": "HEADED=true cucumber-js",
+    "test:debug": "DEBUG=true cucumber-js",
+    "test:smoke": "cucumber-js --tags @smoke",
+    "test:regression": "cucumber-js --tags @regression",
+    "test:parallel": "cucumber-js --parallel 4",
+    "test:login": "cucumber-js --tags @login",
+    "playwright:test": "npx playwright test",
+    "allure:generate": "allure generate reports/allure-results --clean -o reports/allure-report",
+    "allure:open": "allure open reports/allure-report",
+    "allure:serve": "allure serve reports/allure-results",
+    "mcp:start": "cd mcp-server && npm start",
+    "mcp:build": "cd mcp-server && npm run build",
+    "lint": "eslint src features --ext .ts",
+    "lint:fix": "eslint src features --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf reports/allure-results reports/allure-report",
+    "setup": "node scripts/setup.js",
+    "report": "node scripts/allure-report.js",
+    "report:open": "node scripts/allure-report.js open",
+    "report:generate": "node scripts/allure-report.js generate"
+  },
+  "dependencies": {
+    "@cucumber/cucumber": "^10.3.1",
+    "@playwright/test": "^1.43.0",
+    "allure-cucumberjs": "^2.13.0",
+    "allure-js-commons": "^2.13.0",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "form-data": "^4.0.0",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/form-data": "^2.5.0",
+    "@types/node": "^20.12.7",
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^7.7.1",
+    "eslint": "^8.57.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.4.5"
+  }
+}

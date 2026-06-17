@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+mcp-server/node_modules/
+
+# Build outputs
+dist/
+mcp-server/dist/
+
+# Environment files (NEVER commit secrets)
+.env
+.env.local
+.env.dev
+.env.staging
+.env.prod
+!.env.example
+
+# Test Reports & Artifacts
+reports/allure-report/
+reports/screenshots/
+reports/videos/
+reports/traces/
+reports/logs/
+reports/playwright-report/
+reports/test-results/
+reports/cucumber-report.json
+reports/cucumber-report.html
+reports/playwright-results.json
+
+# Playwright
+test-results/
+playwright-report/
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Editor
+.idea/
+*.iml
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/

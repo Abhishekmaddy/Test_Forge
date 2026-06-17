@@ -1,0 +1,35 @@
+{
+  "users": {
+    "admin": {
+      "email": "admin@localhost.com",
+      "password": "admin123",
+      "role": "admin",
+      "firstName": "Local",
+      "lastName": "Admin"
+    },
+    "standard": {
+      "email": "user@localhost.com",
+      "password": "user123",
+      "role": "user",
+      "firstName": "Local",
+      "lastName": "User"
+    }
+  },
+  "invalidUsers": {
+    "wrongPassword": {
+      "email": "user@localhost.com",
+      "password": "wrongpass"
+    }
+  },
+  "api": {
+    "endpoints": {
+      "auth": "/auth/login",
+      "users": "/users",
+      "profile": "/users/me"
+    },
+    "timeouts": {
+      "default": 10000,
+      "upload": 60000
+    }
+  }
+}
