@@ -9,6 +9,7 @@
     "moduleResolution": "node16",
     "resolveJsonModule": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": ".",
@@ -19,7 +20,7 @@
       "@hooks/*": ["src/hooks/*"],
       "@utils/*": ["src/utils/*"],
       "@config/*": ["src/config/*"],
-      "@types/*": ["src/types/*"],
+      "@app-types/*": ["src/types/*"],
       "@tests/*": ["src/tests/*"]
     },
     "experimentalDecorators": true,

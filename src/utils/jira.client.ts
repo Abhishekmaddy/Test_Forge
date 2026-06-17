@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { JiraIssue, JiraTestResult, JiraCreateIssue } from '@types/framework.types';
+import { JiraIssue, JiraTestResult, JiraCreateIssue } from '@app-types/framework.types';
 import { Logger } from './logger';
 import { config } from '@config/config.manager';
 

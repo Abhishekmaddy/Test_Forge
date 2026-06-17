@@ -19,7 +19,7 @@
       "@steps/*": ["src/steps/*"],
       "@hooks/*": ["src/hooks/*"],
       "@config/*": ["src/config/*"],
-      "@types/*": ["src/types/*"]
+      "@app-types/*": ["src/types/*"]
     }
   }
 }

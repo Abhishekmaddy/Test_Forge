@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse } from '@types/framework.types';
+import { ApiResponse } from '@app-types/framework.types';
 import { Logger } from './logger';
 import { config } from '@config/config.manager';
 
