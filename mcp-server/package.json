@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "MCP Server for Enterprise Automation Framework - AI-powered test generation",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node-esm src/index.ts",
     "watch": "tsc --watch"
   },
   "dependencies": {

@@ -16,10 +16,10 @@ import {
   Resource
 } from '@modelcontextprotocol/sdk/types.js';
 import dotenv from 'dotenv';
-import { FileSystemTools } from './tools/filesystem.tools';
-import { JiraTools } from './tools/jira.tools';
-import { TestGenerationTools } from './tools/test-generation.tools';
-import { AnalysisTools } from './tools/analysis.tools';
+import { FileSystemTools } from './tools/filesystem.tools.js';
+import { JiraTools } from './tools/jira.tools.js';
+import { TestGenerationTools } from './tools/test-generation.tools.js';
+import { AnalysisTools } from './tools/analysis.tools.js';
 
 dotenv.config();
 
@@ -158,6 +158,24 @@ class AutomationMcpServer {
       },
 
       // Test Generation Tools
+      {
+        name: 'build_qa_prompt',
+        description:
+          'Build a QA prompt (test plan, test cases, or both) for a user story, ready to hand to an LLM',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            prompt_type: {
+              type: 'string',
+              enum: ['TEST_PLAN', 'TEST_CASES', 'BOTH'],
+              description: 'Which prompt to build: a 14-section test plan, test cases only, or both'
+            },
+            jira_key: { type: 'string', description: 'JIRA key to fetch the user story from' },
+            user_story: { type: 'string', description: 'User story text (used if jira_key is not provided)' },
+            context: { type: 'string', description: 'Context from past testing to include in the prompt' }
+          }
+        }
+      },
       {
         name: 'generate_feature_file',
         description: 'Generate a Cucumber BDD feature file from a user story or requirements',
@@ -343,6 +361,8 @@ class AutomationMcpServer {
         return await this.jiraTools.updateTestResult(args);
 
       // Test Generation
+      case 'build_qa_prompt':
+        return await this.testGenTools.buildQaPrompt(args);
       case 'generate_feature_file':
         return await this.testGenTools.generateFeatureFile(args);
       case 'generate_page_object':

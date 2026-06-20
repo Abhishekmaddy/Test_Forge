@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { JiraTools } from './jira.tools';
+import { JiraTools } from './jira.tools.js';
+import { PromptBuilder, PromptType } from '../utils/prompt-builder.js';
 
 const PROJECT_ROOT = path.resolve(process.cwd(), '..');
 
@@ -55,6 +56,41 @@ export class TestGenerationTools {
           text: `✅ Feature file generated: ${outputPath}\n\n\`\`\`gherkin\n${featureContent}\n\`\`\``
         }
       ]
+    };
+  }
+
+  async buildQaPrompt(
+    args: Record<string, unknown>
+  ): Promise<{ content: { type: string; text: string }[] }> {
+    let userStory = (args.user_story as string) || '';
+    const jiraKey = (args.jira_key as string) || '';
+    const context = (args.context as string) || '';
+
+    if (jiraKey) {
+      const jiraResult = await this.jiraTools.getStory({ issue_key: jiraKey });
+      try {
+        const storyData = JSON.parse(jiraResult.content[0].text);
+        if (!storyData.error) {
+          userStory = storyData.summary || userStory;
+        }
+      } catch {
+        // Non-JSON response, continue with provided args
+      }
+    }
+
+    if (!userStory) {
+      return {
+        content: [
+          { type: 'text', text: '❌ Either user_story or jira_key is required to build a QA prompt.' }
+        ]
+      };
+    }
+
+    const promptType = ((args.prompt_type as string) || PromptType.BOTH) as PromptType;
+    const prompt = PromptBuilder.build(promptType, userStory, context);
+
+    return {
+      content: [{ type: 'text', text: prompt }]
     };
   }
 
