@@ -1,4 +1,13 @@
 import { IConfiguration } from '@cucumber/cucumber/api';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// cucumber.cjs requires this file directly, ahead of config.manager.ts's own
+// dotenv.config() call, so without loading the env files here, PARALLEL/TAGS/
+// etc. below would read as unset even though .env(.<ENV>) defines them.
+const env = process.env.ENV || 'staging';
+dotenv.config({ path: path.resolve(__dirname, `.env.${env}`) });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // cucumber-js merges config `paths` additively with any CLI-provided path
 // (see node_modules/@cucumber/cucumber/lib/configuration/merge_configurations.js),
