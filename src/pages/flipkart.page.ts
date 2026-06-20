@@ -57,6 +57,32 @@ export class FlipkartPage extends BasePage {
     await this.page.locator(this.productLinks).first().waitFor({ state: 'visible', timeout: 25000 });
   }
 
+  // Detects "no results" by absence of product links rather than matching Flipkart's
+  // copy text, which is unreliable to pin down (varies by query and isn't in our control).
+  async searchExpectingNoResults(query: string): Promise<boolean> {
+    await this.fill(this.searchInput, query, 'Flipkart search input');
+    await this.pressKey('Enter');
+    await this.page.waitForURL(/[?&]q=/, { timeout: 15000 }).catch(() => {});
+    const hasResults = await this.page.locator(this.productLinks).first().isVisible({ timeout: 10000 }).catch(() => false);
+    return !hasResults;
+  }
+
+  // Returns true if the search input reflected the payload as executable script
+  // (i.e. an XSS dialog fired) rather than treating it as a literal search string.
+  async searchWithXSSPayload(payload: string): Promise<boolean> {
+    let dialogTriggered = false;
+    const onDialog = (dialog: import('@playwright/test').Dialog) => {
+      dialogTriggered = true;
+      void dialog.dismiss();
+    };
+    this.page.on('dialog', onDialog);
+    await this.fill(this.searchInput, payload, 'Flipkart search input');
+    await this.pressKey('Enter');
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    this.page.off('dialog', onDialog);
+    return dialogTriggered;
+  }
+
   async getProductsWithinBudget(maxPrice: number): Promise<FlipkartProductSummary[]> {
     return this.page.locator(this.productLinks).evaluateAll(
       (anchors, ctx) => {
@@ -87,6 +113,13 @@ export class FlipkartPage extends BasePage {
         ratingCountSelectors: this.cardRatingCountSelectors
       }
     );
+  }
+
+  // "Unfiltered" view of the same already-rendered results page, used to compare
+  // against a high-budget-ceiling filter without re-searching (re-searching risks
+  // a different result order from ad/inventory churn between calls).
+  async getAllProducts(): Promise<FlipkartProductSummary[]> {
+    return this.getProductsWithinBudget(Number.MAX_SAFE_INTEGER);
   }
 
   async openProductWithinBudget(maxPrice: number): Promise<FlipkartProductSummary> {
@@ -133,5 +166,9 @@ export class FlipkartPage extends BasePage {
   async verifyProductPageDisplayed(): Promise<void> {
     await this.page.waitForSelector('h1', { timeout: 15000 });
     await this.assertVisible('h1', 'Product title should be visible on the product page');
+  }
+
+  async isProductImageVisible(): Promise<boolean> {
+    return this.page.locator('img[src]').first().isVisible().catch(() => false);
   }
 }

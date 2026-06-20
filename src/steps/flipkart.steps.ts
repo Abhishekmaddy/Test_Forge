@@ -40,6 +40,60 @@ When('I open a laptop result priced within {string}', async function (this: Cust
   allure.addStep(`Opened laptop "${chosen.name}" priced at Rs.${chosen.price} (rating: ${chosen.rating ?? 'N/A'})`);
 });
 
+Then('the laptop price should not exceed the budget of {string}', async function (this: CustomWorld, maxPrice: string) {
+  const price = this.getTestData<number>('expectedLaptopPrice');
+  expect(price).toBeLessThanOrEqual(Number(maxPrice));
+  allure.addStep(`Verified laptop price Rs.${price} is within budget of Rs.${maxPrice}`);
+});
+
+Then('no laptop should be found within a budget of {string}', async function (this: CustomWorld, maxPrice: string) {
+  const flipkartPage = new FlipkartPage(this.page);
+  const candidates = await flipkartPage.getProductsWithinBudget(Number(maxPrice));
+  expect(candidates.length).toBe(0);
+  allure.addStep(`Verified no laptop results found within an unrealistic budget of Rs.${maxPrice}`);
+});
+
+When('I search for {string} on Flipkart expecting no results', async function (this: CustomWorld, query: string) {
+  const flipkartPage = new FlipkartPage(this.page);
+  const noResults = await flipkartPage.searchExpectingNoResults(query);
+  this.setTestData('noResultsFound', noResults);
+  allure.addStep(`Searched for "${query}" expecting no results`);
+});
+
+Then('no search results should be found', async function (this: CustomWorld) {
+  const noResults = this.getTestData<boolean>('noResultsFound');
+  expect(noResults).toBe(true);
+  allure.addStep('Verified no search results were found for the nonsense query');
+});
+
+When('I search for the XSS payload {string} on Flipkart', async function (this: CustomWorld, payload: string) {
+  const flipkartPage = new FlipkartPage(this.page);
+  const triggered = await flipkartPage.searchWithXSSPayload(payload);
+  this.setTestData('xssDialogTriggered', triggered);
+  allure.addStep(`Searched with XSS payload "${payload}"`);
+});
+
+Then('no script alert should be triggered', async function (this: CustomWorld) {
+  const triggered = this.getTestData<boolean>('xssDialogTriggered');
+  expect(triggered).toBe(false);
+  allure.addStep('Verified no JavaScript alert/dialog was triggered by the search input');
+});
+
+Then('the laptop product image should be visible', async function (this: CustomWorld) {
+  const flipkartPage = new FlipkartPage(this.page);
+  const visible = await flipkartPage.isProductImageVisible();
+  expect(visible).toBe(true);
+  allure.addStep('Verified laptop product image is visible on the product page');
+});
+
+Then('a high budget ceiling of {string} should return the same first laptop as an unfiltered search', async function (this: CustomWorld, maxPrice: string) {
+  const flipkartPage = new FlipkartPage(this.page);
+  const unfiltered = await flipkartPage.getAllProducts();
+  const filtered = await flipkartPage.getProductsWithinBudget(Number(maxPrice));
+  expect(filtered[0]?.href).toBe(unfiltered[0]?.href);
+  allure.addStep(`Verified budget ceiling of Rs.${maxPrice} returns the same first laptop as an unfiltered search`);
+});
+
 Then('the laptop product page should be displayed', async function (this: CustomWorld) {
   const flipkartPage = new FlipkartPage(this.page);
   await flipkartPage.verifyProductPageDisplayed();
