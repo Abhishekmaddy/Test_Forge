@@ -11,6 +11,7 @@
     "test:parallel": "node scripts/run-tests.js --parallel 4",
     "test:login": "node scripts/run-tests.js --tags @login",
     "test:flipkart": "node scripts/run-tests.js --tags @flipkart",
+    "test:irctc": "node scripts/run-tests.js --tags @irctc",
     "playwright:test": "npx playwright test",
     "allure:generate": "rimraf reports/allure-report && allure generate reports/allure-results -o reports/allure-report",
     "allure:open": "allure open reports/allure-report",

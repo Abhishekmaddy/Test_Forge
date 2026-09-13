@@ -6,6 +6,10 @@ mcp-server/node_modules/
 dist/
 mcp-server/dist/
 
+# Local Claude Code / tooling config (may contain MCP keys)
+.claude.json
+.claude/
+
 # Environment files (NEVER commit secrets)
 .env
 .env.local
